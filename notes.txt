@@ -1,0 +1,117 @@
+Challenge: Create an app to improve mood and reduce stress.
+Challenge: Design a tool to suggest healthy meals and find fresh food nearby.
+Challenge: Develop a fun way to track and encourage physical activity.
+
+//have a random dog/cat of the day using:
+    https://dog.ceo/api/breeds/image/random Fetch!
+    (json -> {
+        "message": "https://images.dog.ceo/breeds/terrier-norfolk/n02094114_1198.jpg",
+        "status": "success"
+    })
+
+    cat ->
+    [
+      {
+        "id": "0F0IKAPOdWiE755P",
+        "tags": [
+          "meet",
+          "cute"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2024-06-18T09:46:45.702Z"
+      },
+      {
+        "id": "0GC9MRUAqxhBzPyA",
+        "tags": [
+          "cute"
+        ],
+        "mimetype": "image/png",
+        "createdAt": "2024-09-15T15:45:25.375Z"
+      },
+      {
+        "id": "0mstmOIucwiN80jb",
+        "tags": [
+          "cute",
+          "black"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2023-10-25T00:04:03.771Z"
+      },
+      {
+        "id": "0RU7ZkgzyvWv8UJG",
+        "tags": [
+          "tuxedo",
+          "computer",
+          "sleepy",
+          "cute",
+          "sleeping"
+        ],
+        "mimetype": "image/png",
+        "createdAt": "2024-04-20T22:52:58.132Z"
+      },
+      {
+        "id": "0ztFbDrgDV2K7yJ1",
+        "tags": [
+          "cute",
+          "orange",
+          "funny",
+          "lasagna",
+          "garfield"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2024-08-23T20:15:26.393Z"
+      },
+      {
+        "id": "1bJraW0IwSPm3MVd",
+        "tags": [
+          "cute",
+          "fluffy"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2022-04-27T01:49:50.792Z"
+      },
+      {
+        "id": "1CF7xZmlX0t8QpgP",
+        "tags": [
+          "ange",
+          "cute"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2016-11-22T05:38:06.656Z"
+      },
+      {
+        "id": "1DrcyohjhwcNaRIz",
+        "tags": [
+          "cute",
+          "orange",
+          "sleepy",
+          "tired",
+          "outside",
+          "grass"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2024-02-29T00:49:57.420Z"
+      },
+      {
+        "id": "1KeQpy7eHqi0SFmc",
+        "tags": [
+          "orange",
+          "cute",
+          "lying",
+          "bed",
+          "blanket"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2024-10-08T23:54:00.959Z"
+      },
+      {
+        "id": "1N2AH31jiY6N9TYc",
+        "tags": [
+          "cute",
+          "mlem"
+        ],
+        "mimetype": "image/jpeg",
+        "createdAt": "2024-02-08T07:59:29.085Z"
+      }
+    ]
+
