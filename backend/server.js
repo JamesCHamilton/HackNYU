@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { router as TrainerRouter } from "./routes/trainers.js";
 import { router as ClientRouter } from "./routes/clients.js";
 import {router as LogRouter} from "./routes/logs.js";
+import { router as APIHandler } from './routes/api.js'; // Import the API handler
 
 // Load environment variables
 dotenv.config();
@@ -41,6 +42,7 @@ app.use(express.json()); // Parse JSON request bodies
 app.use("/trainers", TrainerRouter); // Trainer routes
 app.use("/clients", ClientRouter); // Client routes
 app.use("/logs",LogRouter )// Log routes
+app.use("/api", APIHandler); // API routes
 
 // Example route for testing
 app.get("/", (req, res) => {

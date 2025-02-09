@@ -59,11 +59,6 @@ const trainerSchema = new mongoose.Schema({
         required:true,
     },
 
-    idNumber: {
-        type:String,
-        required:true,
-        unique: true,
-    },
     logs: [{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Log"

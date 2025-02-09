@@ -12,18 +12,22 @@ router.post("/", async (req, res) => {
         lastName,
         dateOfBirth,
         gender,
-        idNumber,
         email,
         username,
         phoneNumber,
         password,
         yearsOfExperience,
-        confirmPassword
+        
     } = req.body;
 
     try {
+
+        if (!password) {
+            console.log("password is missing")
+            return res.status(400).json({ error: "Password is required" });
+            
+        }
         if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters!" });
-        if (password !== confirmPassword) return res.status(400).json({ error: "Passwords do not match!" });
 
         const hashedPassword = await bcryptjs.hash(password, 10);
         const trainer = new Trainer({
@@ -31,7 +35,6 @@ router.post("/", async (req, res) => {
             lastName,
             dateOfBirth,
             gender,
-            idNumber,
             email,
             username,
             phoneNumber,

@@ -61,6 +61,12 @@ const clientSchema = new mongoose.Schema({
         type: Date,
         default: Date.now, // Track the last login date
     },
+    logs: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Log",
+        },
+    ],
 });
 
 const Client = mongoose.models?.Client || mongoose.model("Client", clientSchema);

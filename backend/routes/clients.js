@@ -1,57 +1,134 @@
 import express from "express";
 const router = express.Router();
-import { verifyToken } from "../jwtMiddleware.js";
+import { verifyToken, generateToken } from "../jwtMiddleware.js";
 import Client from "../schemas/Client.js";
 import Log from "../schemas/Log.js";
 import bcryptjs from "bcryptjs";
 import Trainer from "../schemas/Trainer.js";
+import axios from "axios";
 
+// Helper function to fetch and save a random photo
+const fetchAndSaveRandomPhoto = async (clientId, animal) => {
+    let photoUrl;
+    if (animal === "cat") {
+        const response = await axios.get("https://cataas.com/cat", {
+            responseType: "arraybuffer",
+        });
+        photoUrl = `data:image/jpeg;base64,${Buffer.from(response.data, "binary").toString("base64")}`;
+    } else if (animal === "dog") {
+        const response = await axios.get("https://dog.ceo/api/breeds/image/random");
+        photoUrl = response.data.message;
+    } else {
+        throw new Error("Invalid animal type");
+    }
 
+    const client = await Client.findById(clientId);
+    if (!client) {
+        throw new Error("Client not found");
+    }
 
-router.post("/", async (req, res) => {
-  try {
-    const { firstName, lastName, email, password, phoneNumber, gender, idNumber, username, tosAccepted, dateOfBirth, reasonForJoining,} = req.body;
+    if (client.points < 100) {
+        throw new Error("Not enough points to collect a photo");
+    }
 
-    // Hash the password
-    const hashedPassword = await bcryptjs.hash(password, 10);
-
-    // Create a new client
-    const client = new Client({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      phoneNumber,
-      gender,
-      idNumber,
-      username,
-      dateOfBirth,
-      reasonForJoining,
-      tosAccepted,
-    });
-
-    // Save the client to the database
+    client.collectedPhotos.push(photoUrl);
+    client.points -= 100;
     await client.save();
 
-    res.status(201).json({ message: "Client created successfully", client });
-  } catch (error) {
-    console.error("Error creating client:", error);
-    if (error.code === 11000) {
-      const duplicateField = Object.keys(error.keyValue)[0];
-      return res.status(400).json({ error: `${duplicateField} already exists` });
+    return photoUrl;
+};
+
+// Client Registration
+router.post("/", async (req, res) => {
+    try {
+        const { firstName, lastName, email, password, phoneNumber, gender, idNumber, username, tosAccepted, dateOfBirth, reasonForJoining } = req.body;
+
+        // Hash the password
+        const hashedPassword = await bcryptjs.hash(password, 10);
+
+        // Create a new client
+        const client = new Client({
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            phoneNumber,
+            gender,
+            idNumber,
+            username,
+            dateOfBirth,
+            reasonForJoining,
+            tosAccepted,
+            points: 0, // Initialize points to 0
+            collectedPhotos: [], // Initialize empty array for collected photos
+            completedChallenges: [], // Initialize empty array for completed challenges
+            lastLogin: new Date(), // Set last login to current date
+        });
+
+        // Save the client to the database
+        await client.save();
+
+        res.status(201).json({ message: "Client created successfully", client });
+    } catch (error) {
+        console.error("Error creating client:", error);
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyValue)[0];
+            return res.status(400).json({ error: `${duplicateField} already exists` });
+        }
+        res.status(500).json({ error: "Internal server error" });
     }
-    res.status(500).json({ error: "Internal server error" });
-  }
 });
 
-router.post("/:clientId/collect-random-photo", async (req, res) => {
-    try {
-        const { clientId } = req.params;
-        const { animal } = req.body; // Expecting "cat" or "dog" in the request body
+router.put("/", async (req, res) => {
+    const { username, password } = req.body;
 
-        if (!animal || (animal !== "cat" && animal !== "dog")) {
-            return res.status(400).json({ message: "Invalid animal type. Must be 'cat' or 'dog'." });
-        }
+    try {
+        const client = await Client.findOne({ username });
+        if (!client) return res.status(404).json({ error: "Client not found" });
+        
+        const matchedPassword = await bcryptjs.compare(password, client.password);
+        if (!matchedPassword) return res.status(401).json({ error: "Invalid credentials" });
+
+        const token = generateToken(client);
+        res.cookie("token", token, { 
+            maxAge: 9000000,
+            secure: process.env.NODE_ENV === "production",
+            httpOnly: true,
+            path: "/",
+            sameSite: 'Lax'  
+        });
+        return res.status(200).json({ message: "Login successful" });
+    } catch (error) {
+        console.log(error)
+        if (error.name === 'ValidationError') {
+            // Handle Mongoose validation errors
+            const errors = Object.values(error.errors).map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            return res.status(400).json({
+                error: "Validation Error",
+                details: errors
+            });
+          }
+          if (error.code === 11000) {
+            // Extract the duplicate field(s)
+            const duplicateField = Object.keys(error.keyValue)[0];
+            const duplicateValue = error.keyValue[duplicateField];
+            res.status(400).json({
+              error: `Duplicate value found: ${duplicateField} '${duplicateValue}' is already in use.`,
+            });
+          }
+      res.status(500).json({ error: "Error creating/updating doctor", error });
+    }
+});
+
+
+// Collect Random Photo
+router.post("/collectRandomPhoto", verifyToken, async (req, res) => {
+    try {
+        const { animal } = req.body; // Expecting "cat" or "dog" in the request body
+        const clientId = req.user._id; // Get clientId from the authenticated user
 
         const photoUrl = await fetchAndSaveRandomPhoto(clientId, animal);
         res.status(200).json({ message: "Photo collected successfully!", photoUrl });
@@ -60,68 +137,70 @@ router.post("/:clientId/collect-random-photo", async (req, res) => {
     }
 });
 
+// Search Trainers
 router.post("/searchtrainers", async (req, res) => {
     try {
-      const { firstName, lastName, gender, certification, yearsOfExperience, name } = req.query;
-  
-      // Build the search query dynamically
-      const query = {};
-  
-      // Search by first name or last name
-      if (name) {
-        query.$or = [
-          { firstName: { $regex: name, $options: "i" } }, // Case-insensitive partial match
-          { lastName: { $regex: name, $options: "i" } },
-        ];
-      }
-  
-      // Search by first name (if provided separately)
-      if (firstName) {
-        query.firstName = { $regex: firstName, $options: "i" };
-      }
-  
-      // Search by last name (if provided separately)
-      if (lastName) {
-        query.lastName = { $regex: lastName, $options: "i" };
-      }
-  
-      // Search by gender
-      if (gender) {
-        query.gender = { $regex: gender, $options: "i" };
-      }
-  
-      // Fetch trainers matching the query
-      const trainers = await Trainer.find(query)
-        .select("-password") // Exclude sensitive information
-        .populate('certifacateImage'); // Populate certificate details if needed
-  
-      if (trainers.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No trainers found matching the criteria",
+        const { firstName, lastName, gender, certification, yearsOfExperience, name } = req.query;
+
+        // Build the search query dynamically
+        const query = {};
+
+        // Search by first name or last name
+        if (name) {
+            query.$or = [
+                { firstName: { $regex: name, $options: "i" } }, // Case-insensitive partial match
+                { lastName: { $regex: name, $options: "i" } },
+            ];
+        }
+
+        // Search by first name (if provided separately)
+        if (firstName) {
+            query.firstName = { $regex: firstName, $options: "i" };
+        }
+
+        // Search by last name (if provided separately)
+        if (lastName) {
+            query.lastName = { $regex: lastName, $options: "i" };
+        }
+
+        // Search by gender
+        if (gender) {
+            query.gender = { $regex: gender, $options: "i" };
+        }
+
+        // Fetch trainers matching the query
+        const trainers = await Trainer.find(query)
+            .select("-password") // Exclude sensitive information
+            .populate('certifacateImage'); // Populate certificate details if needed
+
+        if (trainers.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No trainers found matching the criteria",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            trainers,
         });
-      }
-  
-      return res.status(200).json({
-        success: true,
-        trainers,
-      });
     } catch (error) {
-      console.error("Error searching for trainers:", error);
-      return res.status(500).json({
-        success: false,
-        error: "Internal server error",
-      });
+        console.error("Error searching for trainers:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal server error",
+        });
     }
-  });
-// Get client profile
+});
+
+// Get Client Profile
 router.get("/", verifyToken, async (req, res) => {
     try {
         const client = await Client.findById(req.user._id)
             .populate('logs')
             .populate('trainers');
         if (!client) return res.status(404).json({ error: "Client not found" });
-        
+
         const latestLog = client.logs.length > 0 ? client.logs[client.logs.length - 1] : null;
         const latestMetrics = latestLog ? {
             bloodGlucose: latestLog.bloodGlucose,
@@ -137,7 +216,7 @@ router.get("/", verifyToken, async (req, res) => {
     }
 });
 
-// Update client profile
+// Update Client Profile
 router.put("/profile", verifyToken, async (req, res) => {
     const updates = req.body;
     try {
@@ -164,7 +243,7 @@ router.put("/profile", verifyToken, async (req, res) => {
     }
 });
 
-// Change password
+// Change Password
 router.put("/password", verifyToken, async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     try {
@@ -187,7 +266,7 @@ router.put("/password", verifyToken, async (req, res) => {
     }
 });
 
-// Assign/Update trainer
+// Assign/Update Trainer
 router.put("/trainer", verifyToken, async (req, res) => {
     const { trainerId } = req.body;
     try {
@@ -205,7 +284,7 @@ router.put("/trainer", verifyToken, async (req, res) => {
     }
 });
 
-// Remove trainer
+// Remove Trainer
 router.delete("/trainer", verifyToken, async (req, res) => {
     try {
         const client = await Client.findByIdAndUpdate(
@@ -222,7 +301,7 @@ router.delete("/trainer", verifyToken, async (req, res) => {
     }
 });
 
-// Delete client account
+// Delete Client Account
 router.delete("/", verifyToken, async (req, res) => {
     try {
         const client = await Client.findByIdAndDelete(req.user._id);
@@ -230,7 +309,7 @@ router.delete("/", verifyToken, async (req, res) => {
 
         // Delete associated logs
         await Log.deleteMany({ client: req.user._id });
-        
+
         res.status(200).json({ message: "Account deleted successfully" });
     } catch (error) {
         console.error(error);
@@ -238,6 +317,7 @@ router.delete("/", verifyToken, async (req, res) => {
     }
 });
 
+// Create Health Log
 router.post("/clients/logs", verifyToken, async (req, res) => {
     const { bloodGlucose, bloodPressure, weight } = req.body;
     try {
@@ -248,17 +328,18 @@ router.post("/clients/logs", verifyToken, async (req, res) => {
             client: req.user._id
         });
         await log.save();
-        
+
         // Add log to client's logs array
         await Client.findByIdAndUpdate(req.user._id, { $push: { logs: log._id } });
-        
+
         res.status(201).json({ message: "Log created successfully", log });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error creating log" });
     }
 });
-// Existing log routes (keep these at the bottom)
+
+// Get Client Logs
 router.get("/clients/logs", verifyToken, async (req, res) => {
     try {
         const client = await Client.findById(req.user._id).populate('logs');
@@ -270,6 +351,4 @@ router.get("/clients/logs", verifyToken, async (req, res) => {
     }
 });
 
-
-
-export {router};
+export { router };
