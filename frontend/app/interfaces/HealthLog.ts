@@ -2,7 +2,7 @@ interface HealthLog {
   weight: string;
   bloodPressure: string;
   bloodGlucose: string;
-  recordedAt: string;
+  timestamp: string;
 }
 
 export default HealthLog

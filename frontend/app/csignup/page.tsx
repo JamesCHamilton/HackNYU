@@ -9,7 +9,7 @@ const router = useRouter()
 const [formData, setFormData] = useState({
 firstName: "",
 lastName: "",
-dateofbirth: "",
+dateOfBirth: "",
 email: "",
 phoneNumber: "",
 gender: "",
@@ -86,14 +86,14 @@ return (
             </div>
         {/* Date Of Birth */}
         <div>
-        <label htmlFor="dateofbirth" className="block text-sm font-medium text-[#FFFFFF]">
+        <label htmlFor="dateOfBirth" className="block text-sm font-medium text-[#FFFFFF]">
             Date of Birth
         </label>
         <input
             type="date"
-            id="dateofbirth"
-            name="dateofbirth"
-            value={formData.dateofbirth}
+            id="dateOfBirth"
+            name="dateOfBirth"
+            value={formData.dateOfBirth}
             onChange={handleInputChange}
             className="mt-1 block w-full px-3 py-2 bg-[#FFFFFF] border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#BF0F7] focus:border-[#BF0F7]"
             required

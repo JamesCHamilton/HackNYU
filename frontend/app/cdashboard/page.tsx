@@ -11,45 +11,46 @@ import FoodRecommendation from "../interfaces/FoodRecommendation";
 import HealthLog from "../interfaces/HealthLog";
 
 export default function ClientDashboard() {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [logEntries, setLogEntries] = useState<{ [key: string]: any }>({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentLog, setCurrentLog] = useState<HealthLog>({
     bloodGlucose: "",
     bloodPressure: "",
     weight: "",
-    recordedAt: "",
+    timestamp: "",
   });
   const [foodRecommendations, setFoodRecommendations] = useState<FoodRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchDashboard = () => {
-    axios.get(`${process.env.NEXT_PUBLIC_SERVER}/patient`, { 
+    axios.get(`${process.env.NEXT_PUBLIC_SERVER}/clients`, { 
       withCredentials: true 
     })
     .then((res) => {
-      setFoodRecommendations(res.data.foodRecommendations || []);
+      // Ensure latestMetrics is correctly fetched
       setCurrentLog(res.data.latestMetrics || {
         bloodGlucose: "N/A",
         bloodPressure: "N/A",
         weight: "N/A",
-        recordedAt: ""
+        timestamp: ""
       });
+  
+      setFoodRecommendations(res.data.foodRecommendations || []);
       setError("");
     })
     .catch((error) => {
       console.error(error);
       setError("Failed to load health data");
+  
       setCurrentLog({
         bloodGlucose: "N/A",
         bloodPressure: "N/A",
         weight: "N/A",
-        recordedAt: ""
+        timestamp: ""
       });
     })
     .finally(() => setLoading(false));
   };
+  
 
   useEffect(() => {
     fetchDashboard();
@@ -58,23 +59,35 @@ export default function ClientDashboard() {
   const handleLogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_SERVER}/patients/logs`, {
-        ...currentLog,
-        recordedAt: new Date().toISOString()
-      }, { 
-        withCredentials: true 
-      });
+      // Sending the log data to the server
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER}/logs`,
+        {
+          ...currentLog,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          withCredentials: true,
+        }
+      );
+  
+      // Clear the form
       setCurrentLog({
         bloodGlucose: "",
         bloodPressure: "",
         weight: "",
-        recordedAt: ""
+        timestamp: "",
       });
+  
+      // Refetch dashboard data to update health metrics
       fetchDashboard();
     } catch (error) {
       console.error("Error submitting log:", error);
+  
+      // You can also display a more specific error message if available
+      setError("There was an issue submitting your log. Please try again.");
     }
-  };
+  };  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -197,9 +210,9 @@ export default function ClientDashboard() {
                     value={currentLog.bloodGlucose ? `${currentLog.bloodGlucose} mg/dL` : "N/A"}
                     icon={<Stethoscope className="h-4 w-4" />}
                   />
-                  {currentLog.recordedAt && (
+                  {currentLog.timestamp && (
                     <div className="text-sm text-gray-500 mt-2">
-                      Last recorded: {new Date(currentLog.recordedAt).toLocaleDateString()}
+                      Last recorded: {new Date(currentLog.timestamp).toLocaleDateString()}
                     </div>
                   )}
                 </div>
