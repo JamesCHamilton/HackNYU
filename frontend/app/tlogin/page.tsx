@@ -46,7 +46,7 @@ return (
     <div className="bg-[#1F7A9C] p-8 rounded-lg shadow-lg w-full max-w-md">
     <div className="flex flex-col items-center mb-6">
         <Image
-        src="/company-logo.png" // Replace with your company logo
+        src="/companyLogo.png" // Replace with your company logo
         alt="Company Logo"
         width={100}
         height={100}

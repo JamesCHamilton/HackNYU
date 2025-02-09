@@ -1,7 +1,7 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Calendar, Clock, Stethoscope, Pill, Activity, MessageCircle, Plus, ClipboardList, MapPin } from "lucide-react";
+import { Calendar, Stethoscope, Pill, Activity, MessageCircle, Plus, ClipboardList, } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,7 +10,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import FoodRecommendation from "../interfaces/FoodRecommendation";
 import HealthLog from "../interfaces/HealthLog";
 
+
 export default function ClientDashboard() {
+  const router = useRouter();
   const [currentLog, setCurrentLog] = useState<HealthLog>({
     bloodGlucose: "",
     bloodPressure: "",
@@ -20,6 +22,8 @@ export default function ClientDashboard() {
   const [foodRecommendations, setFoodRecommendations] = useState<FoodRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [collectedPhotos, setCollectedPhotos] = useState<string[]>([]);
+  const [points, setPoints] = useState<number>(0);
 
   const fetchDashboard = () => {
     axios.get(`${process.env.NEXT_PUBLIC_SERVER}/clients`, { 
@@ -27,14 +31,18 @@ export default function ClientDashboard() {
     })
     .then((res) => {
       // Ensure latestMetrics is correctly fetched
-      setCurrentLog(res.data.latestMetrics || {
+      console.log("Backend response:", res.data);
+      setCurrentLog(res.data.client.latestMetrics || {
         bloodGlucose: "N/A",
         bloodPressure: "N/A",
         weight: "N/A",
         timestamp: ""
       });
-  
-      setFoodRecommendations(res.data.foodRecommendations || []);
+      setCollectedPhotos(res.data.client.collectedPhotos || []);
+      setFoodRecommendations(res.data.client.foodRecommendations || []);
+      console.log(res.data.client.points + "something");
+      setPoints(res.data.client.points || 0);
+      console.log("Points set to:", res.data.client.points); // Log the points value
       setError("");
     })
     .catch((error) => {
@@ -89,6 +97,22 @@ export default function ClientDashboard() {
     }
   };  
 
+  const fetchRandomPicture = async () => {
+    try {
+        const animal = ['cat', 'dog'][Math.floor(Math.random() * 2)]; // Randomly choose "cat" or "dog"
+        const response = await axios.post(
+            `${process.env.NEXT_PUBLIC_SERVER}/clients/collectRandomPhoto`, // Use clientId in the URL
+            { animal }, // Send the animal type in the request body
+            { withCredentials: true }
+        );
+        setCollectedPhotos([...collectedPhotos, response.data.photoUrl]);
+        setPoints(points - 100); // Deduct 100 points
+        alert("Picture collected successfully!");
+    } catch (error) {
+        console.error("Error fetching random picture:", error);
+        alert("Failed to collect picture. Please try again.");
+    }
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCurrentLog(prev => ({
@@ -102,12 +126,12 @@ export default function ClientDashboard() {
       {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-4 bg-[#1F7A8C]">
         <div className="flex items-center gap-4">
-          <Image src="/company-logo.png" alt="Company Logo" width={40} height={40} />
+          <Image src="/companyLogo.png" alt="Company Logo" width={40} height={40} />
           <h1 className="text-xl font-bold text-[#FFFFFF]">Client Dashboard</h1>
         </div>
         <div className="flex items-center gap-4">
           <Button className="bg-[#BFDBF7] text-[#022B3A] hover:bg-[#A0C4E2]">
-            <Link href="/pdashboard">Profile</Link>
+            <Link href="/cdashboard">Profile</Link>
           </Button>
           <Button className="bg-[#BFDBF7] text-[#022B3A] hover:bg-[#A0C4E2]">
             <Link href="/">Logout</Link>
@@ -174,6 +198,38 @@ export default function ClientDashboard() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Collect Random Picture Card */}
+          <Card className="bg-[#FFFFFF] shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image src="/picture-icon.png" alt="Picture Icon" width={24} height={24} />
+                Collect Random Picture
+              </CardTitle>
+              <CardDescription>Spend 100 points to collect a random cat or dog picture</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Your Points:</span>
+                  <span className="text-[#022B3A] font-semibold">{points}</span>
+                </div>
+                <Button
+                  onClick={() => fetchRandomPicture()}
+                  className="w-full bg-[#1F7A8C] text-white hover:bg-[#165A6B]"
+                  disabled={points < 100}
+                >
+                  Get a Random Cat/Dog Picture
+                </Button>
+                <Button
+                  onClick={() => router.push("/collectedPictures")}
+                  className="w-full bg-[#BFDBF7] text-[#022B3A] hover:bg-[#A0C4E2]"
+                >
+                  View All Pictures
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

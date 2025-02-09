@@ -1,14 +1,13 @@
 interface TrainerDataTypes{
     firstName: string;
     lastName: string;
-    dateofbirth: string;
+    dateOfBirth: string;
     email: string;
     phoneNumber: string;
     gender: string;
-    idNumber: string;
     username: string;
     password: string;
-    yearsOfExpierence:string;
+    yearsOfExperience:string;
     tosAccepted: boolean;
     certificateImage: File | null;
 };

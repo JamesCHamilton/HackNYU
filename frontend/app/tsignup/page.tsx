@@ -10,25 +10,25 @@ const TrainerSignUp = () => {
   const [formData, setFormData] = useState<TrainerDataTypes>({
     firstName: "",
     lastName: "",
-    dateofbirth: "",
+    dateOfBirth: "",
     email: "",
     phoneNumber: "",
     gender: "",
-    idNumber: "",
     username: "",
     password: "",
-    yearsOfExpierence:"",
+    yearsOfExperience:"",
     tosAccepted: false,
     certificateImage: null,
   });
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e:any) => {
     const { name, value, type, checked } = e.target;
+    console.log(value)
     setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
+        ...formData,
+        [name]: type === "checkbox" ? checked : value,
     });
-  };
+    };
 
   const handleFileChange = (e: any) => {
     const { name, files } = e.target;
@@ -38,36 +38,16 @@ const TrainerSignUp = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e:any) => {
     e.preventDefault();
-    const data = new FormData();
-    (Object.keys(formData) as Array<keyof TrainerDataTypes>).forEach((key) => {
-      const value = formData[key];
-      if (value !== null && value !== undefined) {
-        if (key === 'certificateImage') {
-          // Handle File | null type
-          if (value instanceof File) {
-            data.append(key, value);
-          }
-        } else {
-          data.append(key, value.toString());
-        }
-      }
-    });
-  
-    axios.post(`${process.env.NEXT_PUBLIC_SERVER}/trainers`, data, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    console.log("Form Data:", formData);
+    axios.post(`${process.env.NEXT_PUBLIC_SERVER}/trainers`,formData,{withCredentials:true}).then((res)=>{
+        router.push("/tdashboard");
+    }).catch((error:any)=>{
+        console.error(error)
     })
-    .then((res) => {
-      router.push("/tdashboard");
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  };
+    // Add your submission logic here
+    };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#022834]">
@@ -110,14 +90,14 @@ const TrainerSignUp = () => {
 
           {/* Date Of Birth */}
           <div>
-            <label htmlFor="dateofbirth" className="block text-sm font-medium text-[#FFFFFF]">
+            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-[#FFFFFF]">
               Date of Birth
             </label>
             <input
               type="date"
-              id="dateofbirth"
-              name="dateofbirth"
-              value={formData.dateofbirth}
+              id="dateOfBirth"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
               onChange={handleInputChange}
               className="mt-1 block w-full px-3 py-2 bg-[#FFFFFF] border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#BF0F7] focus:border-[#BF0F7]"
               required
@@ -196,9 +176,9 @@ const TrainerSignUp = () => {
             </label>
             <input
               type="text"
-              id="yearsOfExpierence"
-              name="yearsOfExpierence"
-              value={formData.yearsOfExpierence}
+              id="yearsOfExperience"
+              name="yearsOfExperience"
+              value={formData.yearsOfExperience}
               onChange={handleInputChange}
               className="mt-1 block w-full px-3 py-2 bg-[#FFFFFF] border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#BF0F7] focus:border-[#BF0F7]"
               required
