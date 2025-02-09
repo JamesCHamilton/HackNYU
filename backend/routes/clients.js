@@ -1,10 +1,64 @@
 import express from "express";
 const router = express.Router();
-import { verifyToken } from "../utils/jwtMiddleware.js";
+import { verifyToken } from "../jwtMiddleware.js";
 import Client from "../schemas/Client.js";
 import Log from "../schemas/Log.js";
 import bcryptjs from "bcryptjs";
+import Trainer from "../schemas/Trainer.js";
 
+
+
+router.post("/", async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, phoneNumber, gender, idNumber, username, tosAccepted, dateOfBirth, reasonForJoining,} = req.body;
+
+    // Hash the password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    // Create a new client
+    const client = new Client({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      phoneNumber,
+      gender,
+      idNumber,
+      username,
+      dateOfBirth,
+      reasonForJoining,
+      tosAccepted,
+    });
+
+    // Save the client to the database
+    await client.save();
+
+    res.status(201).json({ message: "Client created successfully", client });
+  } catch (error) {
+    console.error("Error creating client:", error);
+    if (error.code === 11000) {
+      const duplicateField = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ error: `${duplicateField} already exists` });
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/:clientId/collect-random-photo", async (req, res) => {
+    try {
+        const { clientId } = req.params;
+        const { animal } = req.body; // Expecting "cat" or "dog" in the request body
+
+        if (!animal || (animal !== "cat" && animal !== "dog")) {
+            return res.status(400).json({ message: "Invalid animal type. Must be 'cat' or 'dog'." });
+        }
+
+        const photoUrl = await fetchAndSaveRandomPhoto(clientId, animal);
+        res.status(200).json({ message: "Photo collected successfully!", photoUrl });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
 
 router.post("/searchtrainers", async (req, res) => {
     try {
@@ -36,16 +90,6 @@ router.post("/searchtrainers", async (req, res) => {
         query.gender = { $regex: gender, $options: "i" };
       }
   
-      // Search by certification (if available in your schema)
-      if (certification) {
-        query.certifacateImage = { $regex: certification, $options: "i" };
-      }
-  
-      // Search by experience years (if available in your schema)
-      if (yearsOfExperience) {
-        query.yearsOfExperience = { $gte: yearsOfExperience }; // Greater than or equal to
-      }
-  
       // Fetch trainers matching the query
       const trainers = await Trainer.find(query)
         .select("-password") // Exclude sensitive information
@@ -75,9 +119,18 @@ router.get("/", verifyToken, async (req, res) => {
     try {
         const client = await Client.findById(req.user._id)
             .populate('logs')
-            .populate('trainer');
+            .populate('trainers');
         if (!client) return res.status(404).json({ error: "Client not found" });
-        res.status(200).json(client);
+        
+        const latestLog = client.logs.length > 0 ? client.logs[client.logs.length - 1] : null;
+        const latestMetrics = latestLog ? {
+            bloodGlucose: latestLog.bloodGlucose,
+            bloodPressure: latestLog.bloodPressure,
+            weight: latestLog.weight,
+            recordedAt: latestLog.createdAt // Assuming `createdAt` stores the timestamp of the log
+        } : null;
+
+        res.status(200).json({ client, latestMetrics });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Unexpected error occurred" });
@@ -185,19 +238,7 @@ router.delete("/", verifyToken, async (req, res) => {
     }
 });
 
-// Existing log routes (keep these at the bottom)
-router.get("/logs", verifyToken, async (req, res) => {
-    try {
-        const client = await Client.findById(req.user._id).populate('logs');
-        if (!client) return res.status(404).json({ error: "Client not found" });
-        res.status(200).json(client.logs);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Unexpected error occurred" });
-    }
-});
-
-router.post("/logs", verifyToken, async (req, res) => {
+router.post("/clients/logs", verifyToken, async (req, res) => {
     const { bloodGlucose, bloodPressure, weight } = req.body;
     try {
         const log = new Log({
@@ -217,5 +258,18 @@ router.post("/logs", verifyToken, async (req, res) => {
         res.status(500).json({ error: "Error creating log" });
     }
 });
+// Existing log routes (keep these at the bottom)
+router.get("/clients/logs", verifyToken, async (req, res) => {
+    try {
+        const client = await Client.findById(req.user._id).populate('logs');
+        if (!client) return res.status(404).json({ error: "Client not found" });
+        res.status(200).json(client.logs);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Unexpected error occurred" });
+    }
+});
+
+
 
 export {router};
