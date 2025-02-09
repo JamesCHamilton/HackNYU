@@ -205,7 +205,6 @@ export default function ClientDashboard() {
           <Card className="bg-[#FFFFFF] shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Image src="/picture-icon.png" alt="Picture Icon" width={24} height={24} />
                 Collect Random Picture
               </CardTitle>
               <CardDescription>Spend 100 points to collect a random cat or dog picture</CardDescription>
