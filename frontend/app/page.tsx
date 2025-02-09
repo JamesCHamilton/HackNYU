@@ -31,6 +31,9 @@ export default function Home() {
           <li className="hover:underline">
             <Link href="/foodFinder">Let's Find Some Food</Link>
           </li>
+          <li className="hover:underline">
+            <Link href="/calorieCalculator">Calorie Calculator</Link>
+          </li>
         </ul>
 
         <div className="flex gap-4 items-center">
