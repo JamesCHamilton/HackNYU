@@ -5,6 +5,7 @@ import { Card, CardContent } from '../componenets/card';
 import { Loader2, MapPin, Star, Clock } from 'lucide-react';
 import { Button } from '../componenets/button';
 import Place from '../interfaces/Place';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 declare global {
   interface Window {
@@ -17,11 +18,28 @@ export default function FoodFinder() {
   const [results, setResults] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMapLoaded, setIsMapLoaded] = useState(false); // State for tracking if map is loaded
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<any>(null);
 
+  const router = useRouter(); // Initialize the router
+
+  // Load Google Maps API dynamically
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setIsMapLoaded(true); // Set map as loaded when the script finishes loading
+      document.head.appendChild(script);
+    } else {
+      setIsMapLoaded(true); // If already loaded, set the state
+    }
+  }, []);
+
   const initializeMap = (latitude: number, longitude: number) => {
-    if (typeof window !== 'undefined' && window.google) {
+    if (isMapLoaded && mapRef.current && window.google) {
       const googleMap = new window.google.maps.Map(mapRef.current, {
         center: { lat: latitude, lng: longitude },
         zoom: 14,
@@ -31,7 +49,6 @@ export default function FoodFinder() {
       console.error('Google Maps API has not loaded yet');
     }
   };
-  
 
   const handleSearch = async () => {
     if (!food.trim()) {
@@ -51,29 +68,37 @@ export default function FoodFinder() {
 
       const { latitude, longitude } = position.coords;
 
-      initializeMap(latitude, longitude); // Initialize the map with user location
+      if (isMapLoaded) {
+        initializeMap(latitude, longitude); // Initialize the map only when the API is loaded
 
-      const response = await fetch(`http://localhost:3001/api/search?food=${encodeURIComponent(food)}&lat=${latitude}&lng=${longitude}`);
-      
-      if (!response.ok) throw new Error('Failed to fetch results');
+        const response = await fetch(`http://localhost:3001/api/search?food=${encodeURIComponent(food)}&lat=${latitude}&lng=${longitude}`);
+        
+        if (!response.ok) throw new Error('Failed to fetch results');
 
-      const data = await response.json();
-      setResults(data.results);
+        const data = await response.json();
+        setResults(data.results);
 
-      // Add markers to the map for each place
-      data.results.forEach((place: any) => {
-        new window.google.maps.Marker({
-          position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
-          map: map,
-          title: place.name,
+        // Add markers to the map for each place
+        data.results.forEach((place: any) => {
+          new window.google.maps.Marker({
+            position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
+            map: map,
+            title: place.name,
+          });
         });
-      });
+      } else {
+        console.error('Google Maps API not loaded yet');
+      }
     } catch (error) {
       console.error(error);
       setError(error instanceof Error ? error.message : 'Failed to search locations');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToHome = () => {
+    router.push('/'); // Navigate to the home page
   };
 
   return (
@@ -135,6 +160,13 @@ export default function FoodFinder() {
         ref={mapRef}
         style={{ height: '400px', width: '100%', marginTop: '2rem' }}
       ></div>
+
+      {/* Back to Home Button */}
+      <div className="mt-4 text-center">
+        <Button onClick={handleBackToHome} className="bg-blue-500 text-white px-4 py-2 rounded">
+          Back to Home
+        </Button>
+      </div>
     </div>
   );
 }

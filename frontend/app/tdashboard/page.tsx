@@ -197,7 +197,7 @@ export default function TrainerDashboard() {
                 <MessageCircle className="text-[#1F7A8C]" />
                 Chat
               </CardTitle>
-              <CardDescription>Communicate with your clients or AI Companion.</CardDescription>
+              <CardDescription>Communicate with your clients.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -207,9 +207,6 @@ export default function TrainerDashboard() {
                 <Button className="w-full bg-[#BFDBF7] text-[#022B3A] hover:bg-[#A0C4E2]">
                   <Link href="/tchatbox">Start New Chat with Client</Link>
                 </Button>
-                <Button className="w-full bg-[#1F7A8C] text-[#FFFFFF] hover:bg-[#165E6F]">
-                  <Link href="/taichatbox">Chat with AI Companion</Link>
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -218,7 +215,7 @@ export default function TrainerDashboard() {
 
       {/* Footer */}
       <footer className="p-4 bg-[#1F7A8C] text-[#FFFFFF] text-center">
-        <p>© {new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Equilibrium Academy. All rights reserved.</p>
       </footer>
     </div>
   );
