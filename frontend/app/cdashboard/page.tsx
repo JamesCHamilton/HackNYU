@@ -378,7 +378,7 @@ export default function ClientDashboard() {
 
       {/* Footer (Original preserved) */}
       <footer className="p-4 bg-[#1F7A8C] text-[#FFFFFF] text-center">
-        <p>© {new Date().getFullYear()} HealthTrack. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Equilibrium Academy. All rights reserved.</p>
       </footer>
     </div>
   );
