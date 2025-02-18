@@ -32,7 +32,7 @@ To set up and run the project locally, follow these steps:
     cd frontend
     npm install
     
-  # For backend
+   # For backend
     cd ../backend
     npm install
 4. **Run the Application**: Start both the frontend and backend servers (two different terminals).
